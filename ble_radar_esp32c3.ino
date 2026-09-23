@@ -40,13 +40,16 @@
 //  CONFIGURATION DE COMPILATION
 // ============================================================================
 #define DEBUG_MODE true
-#define LED_PIN -1
+#define LED_PIN 8            // ESP32-C3 SuperMini: blue onboard LED; -1 disables it
+#define LED_ON_LEVEL LOW     // Active-low LED: LOW = on, HIGH = off
+#define LED_OFF_LEVEL HIGH
+#define LED_PULSE_MS 80UL
 #define USE_MDNS 0   // mettre 0 pour gagner ~6 Ko (accès par IP uniquement)
 // Mot de passe du réseau ESP-C3-XXXX (8 à 63 caractères). "" = mot de passe aléatoire généré au 1er démarrage
 #define AP_DEFAULT_PASS "ChangeMe123!"
 static_assert(sizeof(AP_DEFAULT_PASS) == 1 || (sizeof(AP_DEFAULT_PASS) >= 9 && sizeof(AP_DEFAULT_PASS) <= 64),
               "AP_DEFAULT_PASS doit faire 8 a 63 caracteres (ou etre vide)");
-#define FW_VERSION "1.0.1"
+#define FW_VERSION "1.0.2"
 #define CORE_TARGET "Arduino-ESP32 3.3.7"
 #define CONFIG_VERSION 1
 
@@ -644,7 +647,7 @@ void logEvent(const char* fmt, ...) {
 
 void ledPulse() {
 #if LED_PIN >= 0
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, LED_ON_LEVEL);
   g_ledOn = true;
   g_ledOnMs = millis();
 #endif
@@ -652,7 +655,10 @@ void ledPulse() {
 
 void ledLoop() {
 #if LED_PIN >= 0
-  if (g_ledOn && elapsedMs(g_ledOnMs, 80)) { digitalWrite(LED_PIN, LOW); g_ledOn = false; }
+  if (g_ledOn && elapsedMs(g_ledOnMs, LED_PULSE_MS)) {
+    digitalWrite(LED_PIN, LED_OFF_LEVEL);
+    g_ledOn = false;
+  }
 #endif
 }
 
@@ -1493,7 +1499,10 @@ void bleRequestScan() {
   dp.passive = 0;             // scan actif (noms en réponse de scan)
   dp.filter_duplicates = 0;   // tous les paquets
   int rc = ble_gap_disc(own, BLE_HS_FOREVER, &dp, radarGapEvent, nullptr);
-  if (rc == 0 || rc == BLE_HS_EALREADY) g_bleScanning = true;
+  if (rc == 0 || rc == BLE_HS_EALREADY) {
+    g_bleScanning = true;
+    ledPulse();  // Scan accepted: immediate activity flash, even without advertisements.
+  }
   else DBG("BLE", "ble_gap_disc : erreur %d", rc);
 }
 
@@ -1516,6 +1525,7 @@ void bleSupervise() {
     } else {
       g_bleCycles = g_bleCycles + 1;
       g_bleLastCycleMs = millis();
+      ledPulse();  // Continuous scan heartbeat, once per supervision tick (~1 second).
     }
   } else if (agoMs(g_bleStartReqMs) > 3000UL) {
     bleRequestScan();
@@ -1601,7 +1611,6 @@ void watchObserve(int i, const Observation& o) {
     r.hasFilt = true;
   }
   r.lastFiltMs = o.ms;
-  ledPulse();
   calibrationFeed(i, o.rssi);
   float d = watchDistance(w);
   char mac[18];
@@ -3301,7 +3310,7 @@ void setup() {
 
 #if LED_PIN >= 0
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN, LED_OFF_LEVEL);
 #endif
 
   memset(&g_cal, 0, sizeof(g_cal));

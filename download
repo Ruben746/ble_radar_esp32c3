@@ -1,0 +1,41 @@
+# Build output and local tooling
+build/
+.pio/
+.arduino/
+.cache/
+*.bin
+*.elf
+*.hex
+*.map
+*.o
+*.a
+*.d
+*.zip
+
+# Local credentials and device exports
+.env
+.env.*
+secrets.h
+secrets.*
+credentials.*
+config.local.*
+arduino_secrets.h
+*.pem
+*.key
+*.p12
+*.pfx
+*.nvs
+nvs*.csv
+backup*/
+private/
+*.log
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*.bak
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
