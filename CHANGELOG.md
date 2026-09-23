@@ -1,5 +1,13 @@
 # Historique
 
+## 1.0.2 — Carte et témoin BLE
+
+- Bannière corrigée à partir de la photo de la SuperMini fournie, incluse dans les deux README.
+- LED intégrée activée sur GPIO8 avec polarité active LOW, éteinte au démarrage.
+- Flash non bloquant de 80 ms au démarrage accepté du scan puis chaque seconde de scan continu actif, indépendamment de la liste de surveillance.
+- Ancien déclenchement par observation d’un appareil surveillé supprimé pour éviter un allumage quasi continu en présence de nombreux paquets.
+- Documentation bilingue du GPIO, de la polarité et de la signification du clignotement.
+
 ## 1.0.1 — Mot de passe AP modifiable
 
 - Valeur AP initiale remplacée par `ChangeMe123!`, générique et volontairement publique.

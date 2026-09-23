@@ -2,6 +2,10 @@
 
 [English](README.md) · **Français**
 
+![ESP32-C3 BLE Radar](assets/ble-radar-presentation.png)
+
+L’image `assets/ble-radar-presentation.png` sert uniquement à la présentation du dépôt sur GitHub. Elle n’est ni intégrée au sketch, ni compilée dans le firmware, ni téléversée sur l’ESP32.
+
 Radar de présence BLE autonome pour ESP32-C3 SuperMini, avec interface Web en français, liste de surveillance persistante, estimation de proximité par RSSI et notifications Telegram.
 
 Le firmware, le HTML, le CSS, le JavaScript et l’API sont regroupés dans `ble_radar_esp32c3.ino`. Aucun serveur externe n’est nécessaire pour le radar local ; Telegram nécessite Internet.
@@ -29,11 +33,21 @@ Le firmware, le HTML, le CSS, le JavaScript et l’API sont regroupés dans `ble
 | USB CDC On Boot | **Enabled** pour le port USB natif |
 | Moniteur série | **115200 bauds** |
 | Alimentation | Câble USB de données et alimentation stable |
-| LED | Désactivée (`LED_PIN = -1`), aucun GPIO présumé |
+| LED bleue intégrée | **GPIO8**, active à LOW (`LOW` = allumée, `HIGH` = éteinte) |
 
 Aucun capteur, écran ou câblage externe n’est nécessaire. Le Wi-Fi doit être compatible 2,4 GHz. Vérifier les caractéristiques de votre variante de SuperMini.
 
 La mention 3.2.0/Bluedroid de l’en-tête initial a été corrigée : le scan appelle directement les API GAP NimBLE. Ne pas installer une ancienne bibliothèque `ESP32 BLE Arduino` ou une bibliothèque NimBLE externe pour cette configuration. Voir [le code BLE du cœur 3.3.7](https://github.com/espressif/arduino-esp32/blob/3.3.7/libraries/BLE/src/BLEDevice.h).
+
+## Témoin de recherche BLE
+
+La SuperMini noire standard de la bannière possède une **LED utilisateur bleue sur GPIO8**, à logique inversée : **LOW l’allume et HIGH l’éteint**. Le voyant d’alimentation est distinct. Voir la [documentation de la carte](https://nuttx.incubator.apache.org/docs/latest/platforms/risc-v/esp32c3/boards/esp32c3-supermini/index.html).
+
+Le sketch définit maintenant `LED_PIN` à **8**. La LED est éteinte à l’initialisation, émet un flash d’environ **80 ms** lorsqu’un démarrage de scan est accepté, puis clignote environ **une fois par seconde tant que le scan est actif**. Le scan étant continu (`BLE_HS_FOREVER`), ce clignotement indique son activité : il ne correspond pas à un nouveau scan chaque seconde. Il fonctionne même sans appareil détecté et s’arrête lorsque le scan est arrêté ou que son démarrage échoue. Après deux minutes sans annonce reçue, le mécanisme existant de relance peut interrompre brièvement le clignotement.
+
+La temporisation est non bloquante : aucun `delay()` n’est ajouté au scan ou au serveur Web. La boucle principale éteint la LED après l’intervalle prévu ; une boucle chargée peut allonger un flash. Ce témoin indique l’activité logicielle du scan, pas la réception certaine d’un paquet ni l’envoi d’une alerte.
+
+Pour désactiver le témoin, définir `LED_PIN` à `-1`. Ce réglage vise la SuperMini noire standard de la photo fournie ; certains clones diffèrent. GPIO8 est aussi une broche de sélection du mode de démarrage : ne pas ajouter de circuit externe qui la force à LOW pendant le reset.
 
 ## Installation avec Arduino IDE
 
@@ -106,7 +120,7 @@ Utiliser ce projet uniquement pour ses propres équipements ou avec l’autorisa
 
 Le statut de compilation est décrit dans [VALIDATION.md](VALIDATION.md). Aucun essai sur carte physique n’est inclus dans la préparation de cette archive.
 
-Après téléversement, vérifier la première configuration, le scan d’un équipement autorisé, la conservation des paramètres après redémarrage, les trois types d’alertes avec un bot de test, la reconnexion Wi-Fi et le secours AP. Tester la remise à zéro uniquement après avoir accepté la perte de configuration.
+Après téléversement, vérifier la première configuration, le scan d’un équipement autorisé, la conservation des paramètres après redémarrage, les trois types d’alertes avec un bot de test, la reconnexion Wi-Fi et le secours AP. Vérifier également la persistance du nouveau mot de passe AP et le clignotement de la LED bleue pendant le scan, y compris avec une liste de surveillance vide. Tester la remise à zéro uniquement après avoir accepté la perte de configuration.
 
 ## Publication sur GitHub
 
